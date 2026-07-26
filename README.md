@@ -1,8 +1,137 @@
-# IDA Pro MCP
+# IDA Pro MCP（IDA 7.7 兼容分支）
 
 Simple [MCP Server](https://modelcontextprotocol.io/introduction) to allow vibe reversing in IDA Pro.
 
-https://github.com/user-attachments/assets/6ebeaa92-a9db-43fa-b756-eececce2aca0
+> **本分支** 是基于 [mrexodia/ida-pro-mcp](https://github.com/mrexodia/ida-pro-mcp) v2.0.0 的 **Python 3.8 / IDA 7.7 兼容版本**。
+>
+> 上游原版要求 Python 3.11+ 和 IDA 8.3+。本分支经过改造，可在 IDA 7.7 自带的 Python 3.8 环境下运行。
+
+---
+
+## 环境要求
+
+### 上游原版
+- Python **3.11** 或更高
+- IDA Pro **8.3** 或更高
+
+### 本分支（IDA 7.7 兼容）
+- **IDA Pro 7.7**（自带 Python 3.8）
+- **仅支持 GUI 模式** — IDA 7.7 无 `idapro` 模块，不支持 headless/idalib 模式
+- `typing_extensions`（安装步骤见下文）
+- MCP 客户端（Claude Code、Cursor 等）
+
+---
+
+## 安装方式（IDA 7.7 GUI 模式）
+
+### 1. 安装 typing_extensions
+
+IDA 7.7 自带的 Python 3.8 缺少 `typing_extensions`：
+
+```powershell
+# 使用代理
+C:\D\tools\CTF\IDA_Pro_7.7\python38\python.exe -m pip install typing_extensions --proxy http://127.0.0.1:7897
+
+# 或使用国内镜像
+C:\D\tools\CTF\IDA_Pro_7.7\python38\python.exe -m pip install typing_extensions -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn
+```
+
+### 2. 安装 ida-pro-mcp 插件
+
+```powershell
+# 克隆本分支
+git clone https://github.com/wxx6/ida-pro-mcp-for-7.7.git
+cd ida-pro-mcp-for-7.7
+git checkout py38-compat
+
+# 安装到 IDA 7.7 的 Python
+C:\D\tools\CTF\IDA_Pro_7.7\python38\python.exe -m pip install . --no-build-isolation --proxy http://127.0.0.1:7897
+```
+
+### 3. 部署插件文件到 IDA 插件目录
+
+```powershell
+# 复制插件到用户级 IDA 插件目录（所有 IDA 版本共享）
+$DST = "$env:APPDATA\Hex-Rays\IDA Pro\plugins"
+cp C:\D\tools\CTF\IDA_Pro_7.7\python38\Lib\site-packages\ida_pro_mcp\ida_mcp.py $DST
+cp -r C:\D\tools\CTF\IDA_Pro_7.7\python38\Lib\site-packages\ida_pro_mcp\ida_mcp $DST
+```
+
+### 4. （可选）复制自动桥接插件
+
+`mcp_autobridge.py` 会在 IDA 加载文件时自动在二进制目录创建 `.mcp.json`，Claude Code 等客户端可自动发现连接：
+
+```powershell
+cp mcp_autobridge.py C:\D\tools\CTF\IDA_Pro_7.7\plugins\
+```
+
+---
+
+## 使用方式
+
+### 工作流程
+
+1. 用 **IDA Pro 7.7** 打开任意二进制文件
+2. 插件自动启动 MCP HTTP 服务（默认 `http://127.0.0.1:13337`）
+3. 如果使用了 `mcp_autobridge.py`，会在二进制目录自动创建 `.mcp.json`
+4. 在该目录下启动 Claude Code（或其他 MCP 客户端），自动发现并连接
+
+### 验证 MCP 服务
+
+在浏览器中访问 `http://127.0.0.1:13337/mcp`，或使用：
+
+```powershell
+claude mcp list
+```
+
+应显示：
+```
+ida-pro-mcp: http://127.0.0.1:13337/mcp (HTTP)
+```
+
+### 配置选项
+
+在 IDA 中通过 `Edit → Plugins → MCP Configuration` 可以修改：
+- **Host/Port**：默认 `127.0.0.1:13337`
+- **Autostart**：是否在 IDA 打开时自动启动服务
+- **CORS 策略**：控制浏览器访问权限
+
+---
+
+## 与上游版本的差异
+
+| 特性 | 上游原版 | 本分支 |
+|------|---------|--------|
+| Python 版本 | ≥ 3.11 | ≥ 3.8 |
+| IDA 版本 | ≥ 8.3 | ≥ 7.7（仅 GUI） |
+| headless idalib | ✅ 支持 | ❌ 不支持（IDA 7.7 无 idapro） |
+| `match`/`case` 语法 | ✅ | 改为 `if`/`elif`/`else` |
+| `NotRequired` 等 typing 新特性 | `from typing` | `from typing_extensions` |
+| `list[X]`/`dict[X]` 运行时下标 | ✅ | 改为 `List[X]`/`Dict[X]` |
+| `X \| Y` 联合类型运行时 | ✅ | 改为 `Union[X, Y]` |
+| `functools.cache` | ✅ | 改为 `lru_cache(maxsize=None)` |
+| `dataclass(slots=True)` | ✅ | 移除 `slots` 参数 |
+
+---
+
+## 与上游同步
+
+```powershell
+# 添加上游仓库
+git remote add upstream https://github.com/mrexodia/ida-pro-mcp.git
+# 拉取上游更新
+git fetch upstream
+# 合并到本分支
+git merge upstream/main
+# 解决冲突后重新安装
+C:\D\tools\CTF\IDA_Pro_7.7\python38\python.exe -m pip install . --no-build-isolation --force-reinstall --no-deps
+```
+
+---
+
+以下为上游原版 README 内容：
+
+---
 
 The binaries and prompt for the video are available in the [mcp-reversing-dataset](https://github.com/mrexodia/mcp-reversing-dataset) repository.
 
