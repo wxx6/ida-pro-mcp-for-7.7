@@ -200,7 +200,7 @@ class JsonRpcRegistry:
             }
         return {
             "code": -32603,
-            "message": "\n".join(traceback.format_exception(e)).strip() + "\n\nPlease report a bug!",
+            "message": "\n".join(traceback.format_exception(type(e), e, e.__traceback__)).strip() + "\n\nPlease report a bug!",
         }
 
     def _call(self, method: str, params: Any) -> Any:
@@ -212,7 +212,12 @@ class JsonRpcRegistry:
         # Check for cached reflection data
         if func not in self._cache:
             sig = inspect.signature(func)
-            hints = get_type_hints(func)
+            try:
+                hints = get_type_hints(func)
+            except Exception:
+                # Python 3.8/3.9 can't evaluate | union syntax in string
+                # annotations (PEP 563), fall back to no type validation
+                hints = {}
             hints.pop("return", None)
 
             # Determine required vs optional parameters

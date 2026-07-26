@@ -999,7 +999,10 @@ class McpServer:
 
     def _generate_prompt_schema(self, func_name: str, func: Callable) -> dict:
         """Generate MCP prompt schema from a function"""
-        hints = get_type_hints(func, include_extras=True)
+        try:
+            hints = get_type_hints(func, include_extras=True)
+        except Exception:
+            hints = {}
         hints.pop("return", None)
         sig = inspect.signature(func)
 
@@ -1098,7 +1101,10 @@ class McpServer:
 
     def _typed_dict_to_schema(self, typed_dict_class) -> dict:
         """Convert TypedDict to JSON schema"""
-        hints = get_type_hints(typed_dict_class, include_extras=True)
+        try:
+            hints = get_type_hints(typed_dict_class, include_extras=True)
+        except Exception:
+            hints = {}
         required_keys = getattr(typed_dict_class, '__required_keys__', set(hints.keys()))
 
         return {
@@ -1113,7 +1119,10 @@ class McpServer:
 
     def _generate_tool_schema(self, func_name: str, func: Callable) -> dict:
         """Generate MCP tool schema from a function"""
-        hints = get_type_hints(func, include_extras=True)
+        try:
+            hints = get_type_hints(func, include_extras=True)
+        except Exception:
+            hints = {}
         return_type = hints.pop("return", None)
         sig = inspect.signature(func)
 
