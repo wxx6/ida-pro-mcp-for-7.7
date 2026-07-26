@@ -1156,7 +1156,14 @@ def decompile_function_safe(
             _tail = ida_hexrays.ctree_item_t()
             line_ea = None
             if include_addresses and cfunc.get_line_item(sl.line, 0, False, _head, item, _tail):
-                dstr: str | None = item.dstr()
+                # item.dstr() 在 IDA 7.7 不可用，尝试 dstr() 和 ea 属性两种方式获取地址
+                try:
+                    dstr = item.dstr()
+                except AttributeError:
+                    dstr = None
+                if dstr is None:
+                    # 退而求其次：尝试直接从 ctree_item_t 获取 ea
+                    line_ea = getattr(item, 'ea', None)
                 if dstr:
                     ds = dstr.split(": ")
                     if len(ds) == 2:
