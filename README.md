@@ -111,6 +111,9 @@ ida-pro-mcp: http://127.0.0.1:13337/mcp (HTTP)
 | `X \| Y` 联合类型运行时 | ✅ | 改为 `Union[X, Y]` |
 | `functools.cache` | ✅ | 改为 `lru_cache(maxsize=None)` |
 | `dataclass(slots=True)` | ✅ | 移除 `slots` 参数 |
+| `get_type_hints` + PEP 563 注解 | ✅ | zeromcp 层 try/except 降级，避免 `\|` 语法 eval 失败 |
+| `traceback.format_exception(e)` | ✅ | 改为三参数形式兼容 Python 3.8 |
+| `ctree_item_t.dstr()` | ✅ | try/except 降级到 `item.ea`（IDA 7.7 SDK 无此方法） |
 
 ---
 
